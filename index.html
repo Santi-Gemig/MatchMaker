@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MatchMaker · Armá los equipos más parejos</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">⚽ MatchMaker</div>
+    <nav class="tabs">
+      <button class="tab active" data-view="jugadores">Jugadores</button>
+      <button class="tab" data-view="equipos">Armar equipos</button>
+      <button class="tab" data-view="historial">Historial</button>
+    </nav>
+  </header>
+
+  <main>
+    <!-- ====== PESTAÑA 1: JUGADORES ====== -->
+    <section id="view-jugadores" class="view">
+      <div class="view-head">
+        <h1>Tus jugadores</h1>
+        <button id="btn-agregar" class="primary">+ Agregar jugador</button>
+      </div>
+      <div id="players-grid" class="players-grid"></div>
+      <div id="players-empty" class="empty hidden">
+        <p>No hay jugadores todavía.</p>
+        <button id="btn-demo" class="ghost">Cargar jugadores de ejemplo</button>
+      </div>
+    </section>
+
+    <!-- ====== PESTAÑA 2: ARMAR EQUIPOS ====== -->
+    <section id="view-equipos" class="view hidden">
+      <div class="view-head">
+        <h1>Armar equipos parejos</h1>
+      </div>
+
+      <!-- Configuración del partido -->
+      <div class="config-card">
+        <label class="field inline">
+          <span>Equipos</span>
+          <select id="cfg-equipos">
+            <option value="2">2</option>
+            <option value="3">3</option>
+            <option value="4">4</option>
+          </select>
+        </label>
+        <label class="field inline">
+          <span>Jugadores por equipo</span>
+          <select id="cfg-por-equipo">
+            <option value="1">1</option>
+            <option value="2">2</option>
+            <option value="3">3</option>
+            <option value="4">4</option>
+            <option value="5" selected>5</option>
+            <option value="6">6</option>
+          </select>
+        </label>
+        <label class="field inline check">
+          <input type="checkbox" id="cfg-arqueros" checked>
+          <span>Intentar repartir arqueros</span>
+        </label>
+      </div>
+
+      <!-- Paso 1: el usuario elige quiénes juegan este partido -->
+      <section class="panel">
+        <div class="panel-head">
+          <h3>1 · Elegí quiénes juegan</h3>
+          <span id="sel-contador" class="sel-contador">0 / 10</span>
+        </div>
+        <p id="sel-msg" class="sel-msg hidden"></p>
+        <div id="seleccion-grid" class="seleccion-grid"></div>
+        <div class="selection-actions">
+          <button id="btn-armar" class="primary big" disabled>⚖️ Armar (promedio)</button>
+          <button id="btn-armar-manual" class="ghost big" disabled>✋ Armar a mano</button>
+        </div>
+      </section>
+
+      <!-- Paso 2: armado manual -->
+      <section id="manual-builder" class="hidden">
+        <div class="panel-head">
+          <h3 id="manual-titulo">🧷 Armá los equipos a mano</h3>
+          <button id="btn-cerrar-manual" class="ghost">← Volver</button>
+        </div>
+        <p class="manual-help">Tocá un jugador libre y mandalo al equipo que quieras (E1 / E2 …). Cada equipo se completa con la cantidad exacta.</p>
+        <div id="manual-join"></div>
+        <button id="btn-confirmar-manual" class="primary big" disabled>✅ Confirmar equipos</button>
+      </section>
+
+      <!-- Paso 3: resultado del armado (cancha 5 vs 5) -->
+      <div id="pitch-area" class="hidden">
+        <div class="pitch-actions">
+          <button id="btn-barajar" class="ghost">🎲 Barajar de nuevo</button>
+          <button id="btn-resultado" class="primary">🏁 Partido jugado → cargar resultado</button>
+        </div>
+        <div id="cancha" class="cancha"></div>
+      </div>
+      <p id="armar-msg" class="msg hidden"></p>
+    </section>
+
+    <!-- ====== PESTAÑA 3: HISTORIAL ====== -->
+    <section id="view-historial" class="view hidden">
+      <div class="view-head">
+        <h1>Historial de partidos</h1>
+        <button id="btn-resetear" class="ghost">↺ Resetear registros</button>
+      </div>
+      <div id="historial-list"></div>
+      <div id="historial-empty" class="empty hidden">
+        <p>Todavía no hay partidos jugados.</p>
+        <p>Generá equipos en la pestaña "Armar equipos" y marcá el resultado cuando se juegue.</p>
+      </div>
+    </section>
+  </main>
+
+  <!-- ====== MODAL ALTA / EDICIÓN DE JUGADOR ====== -->
+  <div id="modal-overlay" class="hidden">
+    <div class="modal">
+      <span id="modal-close" class="modal-close">×</span>
+      <h2 id="modal-title">Nuevo jugador</h2>
+      <form id="player-form" novalidate>
+        <div class="modal-photo">
+          <div class="photo-frame">
+            <img id="photo-prev" alt="Foto" class="none">
+            <div id="photo-fallback" class="photo-fallback">?</div>
+          </div>
+          <div class="photo-actions">
+            <label class="btn">Subir foto<input type="file" id="photo-input" accept="image/*" hidden></label>
+            <button type="button" id="photo-remove" class="btn ghost hidden">Quitar</button>
+          </div>
+        </div>
+
+        <label class="field">
+          <span>Nombre</span>
+          <input id="f-nombre" type="text" maxlength="24" placeholder="Ej: Nico" required>
+        </label>
+
+        <label class="field">
+          <span>Posición preferida</span>
+          <select id="f-pos">
+            <option value="DEL">Delantero</option>
+            <option value="MED">Medio</option>
+            <option value="DEF">Defensor</option>
+            <option value="POR">Arquero</option>
+          </select>
+        </label>
+
+        <!-- Estrellas (estilo FIFA): skills y pierna mala, de 1 a 5 -->
+        <div class="stars-grid">
+          <label class="field">
+            <span>Estrella de skills</span>
+            <select id="f-habilidad">
+              <option value="1">1 ⭐</option>
+              <option value="2">2 ⭐⭐</option>
+              <option value="3" selected>3 ⭐⭐⭐</option>
+              <option value="4">4 ⭐⭐⭐⭐</option>
+              <option value="5">5 ⭐⭐⭐⭐⭐</option>
+            </select>
+          </label>
+          <label class="field">
+            <span>Pierna mala</span>
+            <select id="f-pierna">
+              <option value="1">1 ⭐</option>
+              <option value="2">2 ⭐⭐</option>
+              <option value="3" selected>3 ⭐⭐⭐</option>
+              <option value="4">4 ⭐⭐⭐⭐</option>
+              <option value="5">5 ⭐⭐⭐⭐⭐</option>
+            </select>
+          </label>
+        </div>
+
+        <div class="stats-grid">
+          <div class="slider-row" data-key="fisica">
+            <div class="slider-top"><span>💪 Física</span><b>50</b></div>
+            <input type="range" min="1" max="100" value="50">
+          </div>
+          <div class="slider-row" data-key="velocidad">
+            <div class="slider-top"><span>⚡ Velocidad</span><b>50</b></div>
+            <input type="range" min="1" max="100" value="50">
+          </div>
+          <div class="slider-row" data-key="control">
+            <div class="slider-top"><span>🎯 Control</span><b>50</b></div>
+            <input type="range" min="1" max="100" value="50">
+          </div>
+          <div class="slider-row" data-key="pase">
+            <div class="slider-top"><span>➿ Pase</span><b>50</b></div>
+            <input type="range" min="1" max="100" value="50">
+          </div>
+          <div class="slider-row" data-key="definicion">
+            <div class="slider-top"><span>⚽ Tiro</span><b>50</b></div>
+            <input type="range" min="1" max="100" value="50">
+          </div>
+          <div class="slider-row" data-key="gambeta">
+            <div class="slider-top"><span>🌀 Gambeta</span><b>50</b></div>
+            <input type="range" min="1" max="100" value="50">
+          </div>
+          <div class="slider-row" data-key="defensa">
+            <div class="slider-top"><span>🛡️ Defensa</span><b>50</b></div>
+            <input type="range" min="1" max="100" value="50">
+          </div>
+        </div>
+
+        <div id="ovr-preview" class="ovr-preview">OVR <span id="modal-ovr">50</span></div>
+
+        <div class="modal-actions">
+          <button type="submit" class="primary">Guardar</button>
+          <button type="button" id="modal-cancel" class="ghost">Cancelar</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ====== MODAL RESULTADO DEL PARTIDO ====== -->
+  <div id="resultado-overlay" class="hidden">
+    <div class="resultado-modal">
+      <span id="resultado-close" class="modal-close">×</span>
+      <h3>Cargar resultado</h3>
+      <div class="score-box">
+        <div class="score-team">
+          <b id="rst-eq1">Equipo 1</b>
+          <span id="rst-det1" class="score-det"></span>
+          <input id="goles-1" type="number" min="0" step="1" value="0" class="score">
+        </div>
+        <span class="vs">vs</span>
+        <div class="score-team">
+          <b id="rst-eq2">Equipo 2</b>
+          <span id="rst-det2" class="score-det"></span>
+          <input id="goles-2" type="number" min="0" step="1" value="0" class="score">
+        </div>
+      </div>
+      <div class="modal-actions">
+        <button id="btn-confirmar-resultado" class="primary">Guardar resultado</button>
+        <button id="btn-cerrar-resultado" class="ghost">Cancelar</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="toast" class="toast hidden"></div>
+
+  <script src="js/data.js"></script>
+  <script src="js/balance.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
